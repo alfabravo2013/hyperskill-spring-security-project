@@ -1,0 +1,48 @@
+type: edu
+files:
+  - name: src/taskmanagement/Application.java
+    visible: true
+  - name: build.gradle
+    visible: true
+  - name: src/resources/application.properties
+    visible: true
+  - name: src/taskmanagement/account/AccountRegisterRequest.java
+    visible: true
+  - name: src/taskmanagement/account/Account.java
+    visible: true
+  - name: src/taskmanagement/account/AccountRepository.java
+    visible: true
+  - name: src/taskmanagement/account/AccountService.java
+    visible: true
+  - name: src/taskmanagement/security/SecurityConfig.java
+    visible: true
+  - name: src/taskmanagement/security/SecurityUser.java
+    visible: true
+  - name: src/taskmanagement/security/UserDetailsServiceImpl.java
+    visible: true
+  - name: src/taskmanagement/common/GlobalExceptionHandler.java
+    visible: true
+  - name: src/taskmanagement/common/ApiException.java
+    visible: true
+  - name: src/taskmanagement/tasks/TasksRestController.java
+    visible: true
+  - name: src/taskmanagement/account/AccountRestController.java
+    visible: true
+  - name: src/taskmanagement/tasks/Task.java
+    visible: true
+  - name: src/taskmanagement/tasks/TaskStatus.java
+    visible: true
+  - name: src/taskmanagement/tasks/TaskRepository.java
+    visible: true
+  - name: src/taskmanagement/tasks/TaskService.java
+    visible: true
+  - name: src/taskmanagement/tasks/TaskDto.java
+    visible: true
+  - name: src/taskmanagement/tasks/TaskCreateRequest.java
+    visible: true
+  - name: test/TestUser.java
+    visible: false
+  - name: test/ApplicationTests.java
+    visible: false
+  - name: test/TestTask.java
+    visible: false
