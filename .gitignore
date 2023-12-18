@@ -1,0 +1,15 @@
+.gradle
+/**/tms_db.mv.db
+/**/build/
+/**/uploads/
+/**/out/
+!gradle/wrapper/gradle-wrapper.jar
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+out/
+!**/src/main/**/out/
+!**/src/test/**/out/
