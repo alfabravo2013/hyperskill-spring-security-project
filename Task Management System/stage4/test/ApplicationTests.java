@@ -10,6 +10,7 @@ import org.hyperskill.hstest.testing.expect.json.builder.JsonObjectBuilder;
 
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import static org.hyperskill.hstest.testing.expect.Expectation.expect;
 import static org.hyperskill.hstest.testing.expect.json.JsonChecker.isArray;
@@ -36,7 +37,7 @@ public class ApplicationTests extends SpringTest {
         var actualCode = response.getStatusCode();
         if (actualCode != expectedCode) {
             return CheckResult.wrong(
-                    "Expected status code %d but received %d".formatted(actualCode, expectedCode)
+                    "Expected status code %d but received %d".formatted(expectedCode, actualCode)
             );
         }
 
@@ -53,7 +54,7 @@ public class ApplicationTests extends SpringTest {
         var actualCode = response.getStatusCode();
         if (actualCode != expectedCode) {
             return CheckResult.wrong(
-                    "Expected status code %d but received %d".formatted(actualCode, expectedCode)
+                    "Expected status code %d but received %d".formatted(expectedCode, actualCode)
             );
         }
 
@@ -81,7 +82,7 @@ public class ApplicationTests extends SpringTest {
         var actualCode = response.getStatusCode();
         if (actualCode != expectedCode) {
             return CheckResult.wrong(
-                    "Expected status code %d but received %d".formatted(actualCode, expectedCode)
+                    "Expected status code %d but received %d".formatted(expectedCode, actualCode)
             );
         }
 
@@ -93,20 +94,93 @@ public class ApplicationTests extends SpringTest {
                             .value("description", task.getDescription())
                             .value("status", "CREATED")
                             .value("author", author.getEmail())
+                            .value("assignee", task.getAssignee() == null ? "none" : task.getAssignee())
             );
+            var id = response.getJson().getAsJsonObject().get("id").getAsString();
+            task.setAuthor(author.getEmail());
+            task.setId(id);
+        }
+
+        return CheckResult.correct();
+    }
+
+    CheckResult testAssignTask(TestUser author, String assignee, TestTask task, int expectedCode) {
+        var content = assignee != null ? "{\"assignee\":\"" + assignee + "\"}" : "{\"assignee\":\"none\"}";
+        var endpoint = tasksUrl + "/" + task.getId() + "/assign";
+        var response = put(endpoint, content)
+                .addHeader("Authorization", "Bearer " + author.getToken())
+                .send();
+
+        System.out.println(getRequestDetails(response));
+
+        var actualCode = response.getStatusCode();
+        if (actualCode != expectedCode) {
+            return CheckResult.wrong(
+                    "Expected status code %d but received %d".formatted(expectedCode, actualCode)
+            );
+        }
+
+        if (actualCode == 200) {
+            expect(response.getContent()).asJson().check(
+                    isObject()
+                            .value("id", task.getId())
+                            .value("title", task.getTitle())
+                            .value("description", task.getDescription())
+                            .value("status", "CREATED")
+                            .value("author", author.getEmail())
+                            .value("assignee", assignee == null ? "none" : assignee)
+            );
+
+            task.setAssignee(assignee);
+        }
+
+        return CheckResult.correct();
+    }
+
+    CheckResult testChangeStatus(TestUser user, TestTask task, String status, int expectedCode) {
+        var content = "{\"status\":\"" + status + "\"}";
+        var endpoint = tasksUrl + "/" + task.getId() + "/status";
+        var response = put(endpoint, content)
+                .addHeader("Authorization", "Bearer " + user.getToken())
+                .send();
+
+        System.out.println(getRequestDetails(response));
+
+        var actualCode = response.getStatusCode();
+        if (actualCode != expectedCode) {
+            return CheckResult.wrong(
+                    "Expected status code %d but received %d".formatted(expectedCode, actualCode)
+            );
+        }
+
+        if (actualCode == 200) {
+            expect(response.getContent()).asJson().check(
+                    isObject()
+                            .value("id", task.getId())
+                            .value("title", task.getTitle())
+                            .value("description", task.getDescription())
+                            .value("status", status)
+                            .value("author", task.getAuthor())
+                            .value("assignee", task.getAssignee() == null ? "none" : task.getAssignee())
+            );
+
+            task.setStatus(status);
         }
 
         return CheckResult.correct();
     }
 
     CheckResult testGetAllTasks(TestUser user, List<TestTask> expectedTasks, int expectedCode) {
-        return testGetTasksByAuthor(user, null, expectedTasks, expectedCode);
+        return testGetTasksByAuthorAndAssignee(user, null, null, expectedTasks, expectedCode);
     }
 
-    CheckResult testGetTasksByAuthor(TestUser user, String author, List<TestTask> expectedTasks, int expectedCode) {
+    CheckResult testGetTasksByAuthorAndAssignee(TestUser user, String author, String assignee, List<TestTask> expectedTasks, int expectedCode) {
         var request = get(tasksUrl).addHeader("Authorization", "Bearer " + user.getToken());
         if (author != null) {
             request = request.addParam("author", author);
+        }
+        if (assignee != null) {
+            request = request.addParam("assignee", assignee);
         }
 
         var response = request.send();
@@ -128,7 +202,8 @@ public class ApplicationTests extends SpringTest {
                         .value("title", task.getTitle())
                         .value("description", task.getDescription())
                         .value("status", task.getStatus())
-                        .value("author", task.getAuthor());
+                        .value("author", task.getAuthor())
+                        .value("assignee", task.getAssignee() == null ? "none" : task.getAssignee());
                 arrayBuilder = arrayBuilder.item(objectBuilder);
             }
             expect(response.getContent()).asJson().check(arrayBuilder);
@@ -160,17 +235,27 @@ public class ApplicationTests extends SpringTest {
     TestTask secondTask = TestTask.task2();
     TestTask thirdTask = TestTask.task3();
 
+    TestTask firstTaskFinalized = firstTask;
+    TestTask secondTaskFinalized = secondTask;
+    TestTask thirdTaskFinalized = thirdTask;
+
     List<TestTask> tasksByAlice = List.of(
-            secondTask.withAuthor(alice.getEmail()).withStatus("CREATED"),
-            firstTask.withAuthor(alice.getEmail()).withStatus("CREATED")
+            secondTask.withAuthor(alice.getEmail()).withStatus("COMPLETED").withAssignee(bob.getEmail()),
+            firstTask.withAuthor(alice.getEmail()).withStatus("IN_PROGRESS")
     );
     List<TestTask> tasksByBob = List.of(
-            thirdTask.withAuthor(bob.getEmail()).withStatus("CREATED")
+            thirdTask.withAuthor(bob.getEmail()).withStatus("CREATED").withAssignee(alice.getEmail())
+    );
+    List<TestTask> bobTasksByAlice = List.of(
+            secondTask.withAuthor(alice.getEmail()).withStatus("COMPLETED").withAssignee(bob.getEmail())
+    );
+    List<TestTask> aliceTasksByBob = List.of(
+            thirdTask.withAuthor(bob.getEmail()).withStatus("CREATED").withAssignee(alice.getEmail())
     );
     List<TestTask> allTasks = List.of(
-            thirdTask.withAuthor(bob.getEmail()).withStatus("CREATED"),
-            secondTask.withAuthor(alice.getEmail()).withStatus("CREATED"),
-            firstTask.withAuthor(alice.getEmail()).withStatus("CREATED")
+            thirdTask,
+            secondTask,
+            firstTask
     );
 
     @DynamicTest
@@ -202,21 +287,40 @@ public class ApplicationTests extends SpringTest {
             () -> testCreateTask(firstTask.withDescription(null), bob, 400),   // #20
             () -> testCreateTask(firstTask.withDescription(" "), bob, 400),
 
+            // test assignment
+            () -> testAssignTask(alice, bob.getEmail(), firstTask, 200),
+            () -> testAssignTask(alice, bob.getEmail(), secondTask, 200),
+            () -> testAssignTask(alice, null, firstTask, 200),
+            () -> testAssignTask(bob, alice.getEmail(), thirdTask, 200),
+            () -> testAssignTask(bob, bob.getEmail(), firstTask, 403), // #25
+            () -> testAssignTask(alice, UUID.randomUUID() + "@test.com", firstTask, 404),
+            () -> testAssignTask(alice, bob.getEmail(), firstTask.withId("987654321"), 404),
+
+            // test change status
+            () -> testChangeStatus(alice, firstTask, "IN_PROGRESS", 200),
+            () -> testChangeStatus(alice, secondTask, "IN_PROGRESS", 200),
+            () -> testChangeStatus(bob, secondTask, "COMPLETED", 200), // #30
+            () -> testChangeStatus(bob, firstTask, "COMPLETED", 403),
+            () -> testChangeStatus(alice, firstTask.withId("98765432"), "COMPLETED", 404),
+
             // get all tasks
             () -> testGetAllTasks(alice, allTasks, 200),
             () -> testGetAllTasks(bob, allTasks, 200),
-            () -> testGetAllTasks(alice.withToken(""), List.of(), 401),
-            () -> testGetAllTasks(alice.withToken(fakeToken), allTasks, 401), // #25
+            () -> testGetAllTasks(alice.withToken(""), List.of(), 401), // #35
 
-            // get tasks by author
-            () -> testGetTasksByAuthor(alice, alice.getEmail(), tasksByAlice, 200),
-            () -> testGetTasksByAuthor(bob, alice.getEmail(), tasksByAlice, 200),
-            () -> testGetTasksByAuthor(alice, bob.getEmail(), tasksByBob, 200),
-            () -> testGetTasksByAuthor(alice, "unknown", List.of(), 200),
+            // get tasks by author and assignee
+            () -> testGetTasksByAuthorAndAssignee(alice, alice.getEmail(), null, tasksByAlice, 200),
+            () -> testGetTasksByAuthorAndAssignee(bob, alice.getEmail(), null, tasksByAlice, 200),
+            () -> testGetTasksByAuthorAndAssignee(alice, bob.getEmail(), null, tasksByBob, 200),
+            () -> testGetTasksByAuthorAndAssignee(alice, "unknown", null, List.of(), 200),
+            () -> testGetTasksByAuthorAndAssignee(alice, null, "unknown", List.of(), 200), // #40
+            () -> testGetTasksByAuthorAndAssignee(alice, alice.getEmail(), bob.getEmail(), bobTasksByAlice, 200),
+            () -> testGetTasksByAuthorAndAssignee(alice, bob.getEmail(), alice.getEmail(), aliceTasksByBob, 200),
 
             // test persistence
-            this::reloadServer,  // #30
-            () -> testLogin(alice, 200),
+            this::reloadServer,
+            () -> testCreateUser(alice, 409),
+            () -> testLogin(alice, 200), // #45
             () -> testGetAllTasks(alice, allTasks, 200),
     };
 }

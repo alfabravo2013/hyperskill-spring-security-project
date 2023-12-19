@@ -49,7 +49,7 @@ public class ApplicationTests extends SpringTest {
         var actualCode = response.getStatusCode();
         if (actualCode != expectedCode) {
             return CheckResult.wrong(
-                    "Expected status code %d but received %d".formatted(actualCode, expectedCode)
+                    "Expected status code %d but received %d".formatted(expectedCode, actualCode)
             );
         }
 
@@ -84,7 +84,7 @@ public class ApplicationTests extends SpringTest {
         var actualCode = response.getStatusCode();
         if (actualCode != expectedCode) {
             return CheckResult.wrong(
-                    "Expected status code %d but received %d".formatted(actualCode, expectedCode)
+                    "Expected status code %d but received %d".formatted(expectedCode, actualCode)
             );
         }
 
