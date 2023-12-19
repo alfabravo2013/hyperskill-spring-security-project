@@ -99,6 +99,7 @@ public class ApplicationTests extends SpringTest {
             var id = response.getJson().getAsJsonObject().get("id").getAsString();
             task.setAuthor(author.getEmail());
             task.setId(id);
+            task.setStatus("CREATED");
         }
 
         return CheckResult.correct();
@@ -198,7 +199,7 @@ public class ApplicationTests extends SpringTest {
             JsonArrayBuilder arrayBuilder = isArray(expectedTasks.size());
             for (var task : expectedTasks) {
                 JsonObjectBuilder objectBuilder = isObject()
-                        .value("id", isString())
+                        .value("id", task.getId())
                         .value("title", task.getTitle())
                         .value("description", task.getDescription())
                         .value("status", task.getStatus())
@@ -235,29 +236,6 @@ public class ApplicationTests extends SpringTest {
     TestTask secondTask = TestTask.task2();
     TestTask thirdTask = TestTask.task3();
 
-    TestTask firstTaskFinalized = firstTask;
-    TestTask secondTaskFinalized = secondTask;
-    TestTask thirdTaskFinalized = thirdTask;
-
-    List<TestTask> tasksByAlice = List.of(
-            secondTask.withAuthor(alice.getEmail()).withStatus("COMPLETED").withAssignee(bob.getEmail()),
-            firstTask.withAuthor(alice.getEmail()).withStatus("IN_PROGRESS")
-    );
-    List<TestTask> tasksByBob = List.of(
-            thirdTask.withAuthor(bob.getEmail()).withStatus("CREATED").withAssignee(alice.getEmail())
-    );
-    List<TestTask> bobTasksByAlice = List.of(
-            secondTask.withAuthor(alice.getEmail()).withStatus("COMPLETED").withAssignee(bob.getEmail())
-    );
-    List<TestTask> aliceTasksByBob = List.of(
-            thirdTask.withAuthor(bob.getEmail()).withStatus("CREATED").withAssignee(alice.getEmail())
-    );
-    List<TestTask> allTasks = List.of(
-            thirdTask,
-            secondTask,
-            firstTask
-    );
-
     @DynamicTest
     DynamicTesting[] dt = new DynamicTesting[]{
             // register user
@@ -286,41 +264,44 @@ public class ApplicationTests extends SpringTest {
             () -> testCreateTask(firstTask.withTitle(" "), bob, 400),
             () -> testCreateTask(firstTask.withDescription(null), bob, 400),   // #20
             () -> testCreateTask(firstTask.withDescription(" "), bob, 400),
+            () -> testCreateTask(firstTask, bob.withToken(fakeToken), 401),
 
             // test assignment
             () -> testAssignTask(alice, bob.getEmail(), firstTask, 200),
             () -> testAssignTask(alice, bob.getEmail(), secondTask, 200),
-            () -> testAssignTask(alice, null, firstTask, 200),
+            () -> testAssignTask(alice, null, firstTask, 200), // #25
             () -> testAssignTask(bob, alice.getEmail(), thirdTask, 200),
-            () -> testAssignTask(bob, bob.getEmail(), firstTask, 403), // #25
+            () -> testAssignTask(bob, bob.getEmail(), firstTask, 403),
             () -> testAssignTask(alice, UUID.randomUUID() + "@test.com", firstTask, 404),
             () -> testAssignTask(alice, bob.getEmail(), firstTask.withId("987654321"), 404),
+            () -> testAssignTask(alice.withToken(fakeToken), bob.getEmail(), firstTask, 401), // #30
 
             // test change status
             () -> testChangeStatus(alice, firstTask, "IN_PROGRESS", 200),
             () -> testChangeStatus(alice, secondTask, "IN_PROGRESS", 200),
-            () -> testChangeStatus(bob, secondTask, "COMPLETED", 200), // #30
+            () -> testChangeStatus(bob, secondTask, "COMPLETED", 200),
             () -> testChangeStatus(bob, firstTask, "COMPLETED", 403),
-            () -> testChangeStatus(alice, firstTask.withId("98765432"), "COMPLETED", 404),
+            () -> testChangeStatus(alice, firstTask.withId("98765432"), "COMPLETED", 404), // #35
+            () -> testChangeStatus(alice.withToken(fakeToken), firstTask, "COMPLETED", 401),
 
             // get all tasks
-            () -> testGetAllTasks(alice, allTasks, 200),
-            () -> testGetAllTasks(bob, allTasks, 200),
-            () -> testGetAllTasks(alice.withToken(""), List.of(), 401), // #35
+            () -> testGetAllTasks(alice, List.of(thirdTask, secondTask, firstTask), 200),
+            () -> testGetAllTasks(bob, List.of(thirdTask, secondTask, firstTask), 200),
+            () -> testGetAllTasks(alice.withToken(fakeToken), List.of(), 401),
 
             // get tasks by author and assignee
-            () -> testGetTasksByAuthorAndAssignee(alice, alice.getEmail(), null, tasksByAlice, 200),
-            () -> testGetTasksByAuthorAndAssignee(bob, alice.getEmail(), null, tasksByAlice, 200),
-            () -> testGetTasksByAuthorAndAssignee(alice, bob.getEmail(), null, tasksByBob, 200),
+            () -> testGetTasksByAuthorAndAssignee(alice, alice.getEmail(), null, List.of(secondTask, firstTask), 200), // #40
+            () -> testGetTasksByAuthorAndAssignee(bob, alice.getEmail(), null, List.of(secondTask, firstTask), 200),
+            () -> testGetTasksByAuthorAndAssignee(alice, bob.getEmail(), null, List.of(thirdTask), 200),
             () -> testGetTasksByAuthorAndAssignee(alice, "unknown", null, List.of(), 200),
-            () -> testGetTasksByAuthorAndAssignee(alice, null, "unknown", List.of(), 200), // #40
-            () -> testGetTasksByAuthorAndAssignee(alice, alice.getEmail(), bob.getEmail(), bobTasksByAlice, 200),
-            () -> testGetTasksByAuthorAndAssignee(alice, bob.getEmail(), alice.getEmail(), aliceTasksByBob, 200),
+            () -> testGetTasksByAuthorAndAssignee(alice, null, "unknown", List.of(), 200),
+            () -> testGetTasksByAuthorAndAssignee(alice, alice.getEmail(), bob.getEmail(), List.of(secondTask), 200), // #45
+            () -> testGetTasksByAuthorAndAssignee(alice, bob.getEmail(), alice.getEmail(), List.of(thirdTask), 200),
 
             // test persistence
             this::reloadServer,
             () -> testCreateUser(alice, 409),
-            () -> testLogin(alice, 200), // #45
-            () -> testGetAllTasks(alice, allTasks, 200),
+            () -> testLogin(alice, 200),
+            () -> testGetAllTasks(alice, List.of(thirdTask, secondTask, firstTask), 200), // #50
     };
 }

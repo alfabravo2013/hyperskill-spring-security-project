@@ -1,6 +1,6 @@
 public class TestTask {
-    private String title;
-    private String description;
+    private final String title;
+    private final String description;
     private String status;
     private String author;
 
@@ -28,20 +28,6 @@ public class TestTask {
         return copy;
     }
 
-    public TestTask withAuthor(String author) {
-        var copy = new TestTask(this.title, this.description);
-        copy.setStatus(this.status);
-        copy.setAuthor(author);
-        return copy;
-    }
-
-    public TestTask withStatus(String status) {
-        var copy = new TestTask(this.title, this.description);
-        copy.setStatus(status);
-        copy.setAuthor(this.author);
-        return copy;
-    }
-
     public TestTask withDescription(String description) {
         var copy = new TestTask(this.title, description);
         copy.setStatus(this.status);
@@ -53,16 +39,8 @@ public class TestTask {
         return title;
     }
 
-    public void setTitle(String title) {
-        this.title = title;
-    }
-
     public String getDescription() {
         return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
     }
 
     public String getStatus() {

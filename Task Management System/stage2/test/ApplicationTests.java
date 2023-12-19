@@ -62,6 +62,8 @@ public class ApplicationTests extends SpringTest {
                             .value("status", "CREATED")
                             .value("author", author.email())
             );
+            task.setAuthor(author.email());
+            task.setStatus("CREATED");
         }
 
         return CheckResult.correct();
@@ -128,19 +130,6 @@ public class ApplicationTests extends SpringTest {
     TestTask secondTask = TestTask.task2();
     TestTask thirdTask = TestTask.task3();
 
-    List<TestTask> tasksByAlice = List.of(
-            secondTask.withAuthor(alice.email()).withStatus("CREATED"),
-            firstTask.withAuthor(alice.email()).withStatus("CREATED")
-    );
-    List<TestTask> tasksByBob = List.of(
-            thirdTask.withAuthor(bob.email()).withStatus("CREATED")
-    );
-    List<TestTask> allTasks = List.of(
-            thirdTask.withAuthor(bob.email()).withStatus("CREATED"),
-            secondTask.withAuthor(alice.email()).withStatus("CREATED"),
-            firstTask.withAuthor(alice.email()).withStatus("CREATED")
-    );
-
     @DynamicTest
     DynamicTesting[] dt = new DynamicTesting[]{
             // register user
@@ -165,21 +154,21 @@ public class ApplicationTests extends SpringTest {
             () -> testCreateTask(firstTask.withDescription(" "), bob, 400),
 
             // get all tasks
-            () -> testGetAllTasks(alice, allTasks, 200),
-            () -> testGetAllTasks(bob, allTasks, 200),
+            () -> testGetAllTasks(alice, List.of(thirdTask, secondTask, firstTask), 200),
+            () -> testGetAllTasks(bob, List.of(thirdTask, secondTask, firstTask), 200),
             () -> testGetAllTasks(alice.withEmail("alice@test.com"), List.of(), 401), // #20
-            () -> testGetAllTasks(alice.withEmail("ALICE@email.com"), allTasks, 200),
+            () -> testGetAllTasks(alice.withEmail("ALICE@email.com"), List.of(thirdTask, secondTask, firstTask), 200),
             () -> testGetAllTasks(alice.withPassword("Password"), List.of(), 401),
 
             // get tasks by author
-            () -> testGetTasksByAuthor(alice, alice.email(), tasksByAlice, 200),
-            () -> testGetTasksByAuthor(bob, alice.email(), tasksByAlice, 200),
-            () -> testGetTasksByAuthor(alice, bob.email(), tasksByBob, 200), // #25
+            () -> testGetTasksByAuthor(alice, alice.email(), List.of(secondTask, firstTask), 200),
+            () -> testGetTasksByAuthor(bob, alice.email(), List.of(secondTask, firstTask), 200),
+            () -> testGetTasksByAuthor(alice, bob.email(), List.of(thirdTask), 200), // #25
             () -> testGetTasksByAuthor(alice, "unknown", List.of(), 200),
 
             // test persistence
             this::reloadServer,
             () -> testCreateUser(alice, 409),
-            () -> testGetAllTasks(alice, allTasks, 200),
+            () -> testGetAllTasks(alice, List.of(thirdTask, secondTask, firstTask), 200),
     };
 }

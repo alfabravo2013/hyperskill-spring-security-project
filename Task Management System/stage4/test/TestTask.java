@@ -1,7 +1,7 @@
 public class TestTask {
     private String id;
-    private String title;
-    private String description;
+    private final String title;
+    private final String description;
     private String status;
     private String author;
 
@@ -28,33 +28,6 @@ public class TestTask {
         var copy = new TestTask(title, this.description);
         copy.setId(this.id);
         copy.setStatus(this.status);
-        copy.setAuthor(this.author);
-        copy.setAssignee(this.assignee);
-        return copy;
-    }
-
-    public TestTask withAuthor(String author) {
-        var copy = new TestTask(this.title, this.description);
-        copy.setId(this.id);
-        copy.setStatus(this.status);
-        copy.setAuthor(author);
-        copy.setAssignee(this.assignee);
-        return copy;
-    }
-
-    public TestTask withAssignee(String assignee) {
-        var copy = new TestTask(this.title, this.description);
-        copy.setId(this.id);
-        copy.setStatus(this.status);
-        copy.setAuthor(this.author);
-        copy.setAssignee(assignee);
-        return copy;
-    }
-
-    public TestTask withStatus(String status) {
-        var copy = new TestTask(this.title, this.description);
-        copy.setId(this.id);
-        copy.setStatus(status);
         copy.setAuthor(this.author);
         copy.setAssignee(this.assignee);
         return copy;
@@ -90,16 +63,8 @@ public class TestTask {
         return title;
     }
 
-    public void setTitle(String title) {
-        this.title = title;
-    }
-
     public String getDescription() {
         return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
     }
 
     public String getStatus() {
