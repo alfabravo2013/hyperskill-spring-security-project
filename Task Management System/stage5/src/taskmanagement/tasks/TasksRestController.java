@@ -2,7 +2,6 @@ package taskmanagement.tasks;
 
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -28,7 +27,7 @@ public class TasksRestController {
     }
 
     @GetMapping("/api/tasks")
-    public List<TaskDto> getTasks(@RequestParam(required = false) String author,
+    public List<TaskViewDto> getTasks(@RequestParam(required = false) String author,
                                   @RequestParam(required = false) String assignee) {
         Map<String, String> filters = new HashMap<>(2);
         if (author != null) {
@@ -40,7 +39,7 @@ public class TasksRestController {
 
         List<TaskView> tasks = taskService.findTaskViews(filters);
 
-        return tasks.stream().map(this::mapTaskViewToTaskDto).toList();
+        return tasks.stream().map(this::mapTaskViewToTaskViewDto).toList();
     }
 
     @PutMapping("/api/tasks/{taskId}/assign")
@@ -64,19 +63,18 @@ public class TasksRestController {
                 task.getDescription(),
                 task.getStatus().name(),
                 task.getAuthor().getEmail(),
-                task.getAssignee() == null ? "none" : task.getAssignee().getEmail(),
-                -1
+                task.getAssignee() == null ? "none" : task.getAssignee().getEmail()
         );
     }
 
-    private TaskDto mapTaskViewToTaskDto(TaskView taskView) {
-        return new TaskDto(
+    private TaskViewDto mapTaskViewToTaskViewDto(TaskView taskView) {
+        return new TaskViewDto(
                 taskView.getId(),
                 taskView.getTitle(),
                 taskView.getDescription(),
                 taskView.getStatus().name(),
                 taskView.getAuthor(),
-                taskView.getAssignee(),
+                taskView.getAssignee() == null ? "none" : taskView.getAssignee(),
                 taskView.getTotalComments()
         );
     }

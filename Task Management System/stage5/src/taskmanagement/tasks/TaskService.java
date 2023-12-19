@@ -1,7 +1,5 @@
 package taskmanagement.tasks;
 
-import org.springframework.data.domain.Example;
-import org.springframework.data.domain.Sort;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -38,40 +36,7 @@ public class TaskService {
     public List<TaskView> findTaskViews(Map<String, String> filters) {
         String authorEmail = filters.get("author");
         String assigneeEmail = filters.get("assignee");
-
-        return taskRepository.findAllByViewsAuthorEmail(authorEmail);
-    }
-
-    @Transactional(readOnly = true)
-    public List<Task> findTasks(Map<String, String> filters) {
-        var sort = Sort.by("created_at").descending();
-
-        if (filters.isEmpty()) {
-            return taskRepository.findAll(sort);
-        }
-
-        var probe = new Task();
-
-        var authorEmail = filters.get("author");
-        if (authorEmail != null) {
-            var author = accountService.findAccountByEmail(authorEmail).orElse(null);
-            if (author == null) {
-                return List.of();
-            }
-            probe.setAuthor(author);
-        }
-
-        var assigneeEmail = filters.get("assignee");
-        if (assigneeEmail != null) {
-            var assignee = accountService.findAccountByEmail(assigneeEmail).orElse(null);
-            if (assignee == null) {
-                return List.of();
-            }
-            probe.setAssignee(assignee);
-        }
-
-        var example = Example.of(probe);
-        return taskRepository.findAll(example, sort);
+        return taskRepository.findAllByViewsAuthorEmail(authorEmail, assigneeEmail);
     }
 
     @Transactional

@@ -52,8 +52,6 @@ files:
     visible: true
   - name: src/taskmanagement/tasks/TaskAssigneeUpdateRequest.java
     visible: true
-  - name: test/Tests.java
-    visible: false
   - name: src/taskmanagement/comment/Comment.java
     visible: true
   - name: src/taskmanagement/comment/CommentRepository.java
@@ -68,3 +66,13 @@ files:
     visible: true
   - name: src/taskmanagement/tasks/TaskView.java
     visible: true
+  - name: src/taskmanagement/tasks/TaskViewDto.java
+    visible: true
+  - name: test/TestTask.java
+    visible: false
+  - name: test/TestUser.java
+    visible: false
+  - name: test/ApplicationTests.java
+    visible: false
+  - name: test/TestComment.java
+    visible: false

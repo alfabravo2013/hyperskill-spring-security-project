@@ -28,9 +28,13 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
             LEFT JOIN comment AS c ON t.id = c.task_id
             LEFT JOIN account AS au ON au.id = t.author_id
             LEFT JOIN account AS an ON an.id = t.assignee_id
-            WHERE (:author IS NULL AND au.email IS NOT NULL) OR (:author IS NOT NULL AND :author = au.email)
+            WHERE ((:author IS NULL AND au.email IS NOT NULL)
+                    OR (:author IS NOT NULL AND LOWER(:author) = LOWER(au.email)))
+                  AND ((:assignee IS NULL AND au.email IS NOT NULL)
+                    OR (:assignee IS NOT NULL AND LOWER(:assignee) = LOWER(an.email)))
             GROUP BY t.id, t.title, t.description, t.status, au.email, an.email, t.created_at
             ORDER BY t.created_at DESC
             """, nativeQuery = true)
-    List<TaskView> findAllByViewsAuthorEmail(@Param("author") String author);
+    List<TaskView> findAllByViewsAuthorEmail(@Param("author") String author,
+                                             @Param("assignee") String assignee);
 }
